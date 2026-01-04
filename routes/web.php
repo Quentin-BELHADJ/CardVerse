@@ -31,12 +31,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Gestion de ma collection
+    Route::resource('listings', App\Http\Controllers\ListingController::class)->only(['index', 'store', 'update', 'destroy']);
 });
 
 // 1. ROUTES PUBLIQUES (Visualisation pour tous)
 // Elles utilisent le contrôleur public qui renvoie les vues communes
 Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
 Route::get('/collections/{collection}', [CollectionController::class, 'show'])->name('collections.show');
+Route::get('/marketplace', [App\Http\Controllers\MarketplaceController::class, 'index'])->name('marketplace.index');
 
 // 2. ROUTES ADMIN (Actions de modification uniquement)
 // On garde le préfixe admin pour les actions de création/édition
@@ -51,6 +55,7 @@ Route::middleware(['auth', 'can:admin-access'])->prefix('admin')->name('admin.')
 
 
 // Routes publiques
+Route::get('/cards/search', [CardController::class, 'search'])->name('cards.search');
 Route::resource('cards', CardController::class)->only(['show']);
 
 // Routes Admin
