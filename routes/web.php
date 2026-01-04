@@ -7,8 +7,10 @@ use App\Http\Controllers\CardController;
 use App\Http\Controllers\Admin\CardController as AdminCardController;
 use Illuminate\Support\Facades\Route;
 
-// À ajouter en haut de routes/web.php
+use App\Http\Controllers\ListingController;
 use Illuminate\Support\Facades\Auth;
+
+
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/check-ban', function () {
@@ -33,6 +35,28 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+/* --------------------------------------------------------------------------
+   GESTION PROFIL & LISTINGS (Rôle C - Authentifié)
+   --------------------------------------------------------------------------
+*/
+Route::middleware('auth')->group(function () {
+    // Profil (Déjà présent via Breeze, c'est ici que vous gérerez le contact_info)
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // --- GESTION DES LISTINGS (Développeur C) ---
+    
+    // 1. Création (DOIT être avant /{listing} pour ne pas être confondu avec un ID)
+    Route::get('/listings/create', [ListingController::class, 'create'])->name('listings.create');
+    Route::post('/listings', [ListingController::class, 'store'])->name('listings.store');
+
+    // 2. Modification & Suppression (Sécurisées par des Gates dans le contrôleur)
+    Route::get('/listings/{listing}/edit', [ListingController::class, 'edit'])->name('listings.edit');
+    Route::patch('/listings/{listing}', [ListingController::class, 'update'])->name('listings.update');
+    Route::delete('/listings/{listing}', [ListingController::class, 'destroy'])->name('listings.destroy');
+});
+
 // 1. ROUTES PUBLIQUES (Visualisation pour tous)
 // Elles utilisent le contrôleur public qui renvoie les vues communes
 Route::get('/collections', [CollectionController::class, 'index'])->name('collections.index');
@@ -52,6 +76,8 @@ Route::middleware(['auth', 'can:admin-access'])->prefix('admin')->name('admin.')
 
 // Routes publiques
 Route::resource('cards', CardController::class)->only(['show']);
+Route::get('/exchanges', [ListingController::class, 'indexExchanges'])->name('listings.exchanges');
+Route::get('/listings/{listing}', [ListingController::class, 'show'])->name('listings.show');
 
 // Routes Admin
 Route::middleware(['auth', 'can:admin-access'])->prefix('admin')->name('admin.')->group(function () {

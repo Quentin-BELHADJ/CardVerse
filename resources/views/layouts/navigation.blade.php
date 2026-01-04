@@ -26,7 +26,7 @@
                         {{ __('Marketplace') }}
                     </x-nav-link>
 
-                    <x-nav-link href="#">
+                    <x-nav-link :href="route('listings.exchanges')" :active="request()->routeIs('listings.exchanges')">
                         {{ __('Échanges') }}
                     </x-nav-link>
 
