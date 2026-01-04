@@ -23,6 +23,56 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+
+            <!-- Filters -->
+            <div class="mb-6 bg-white p-4 shadow sm:rounded-lg">
+                <form method="GET" action="{{ route('collections.index') }}" class="flex flex-wrap items-end gap-4">
+
+                    <!-- Search -->
+                    <div class="flex-grow min-w-[200px]">
+                        <label class="block text-sm font-medium text-gray-700">Recherche</label>
+                        <input type="text" name="search" value="{{ request('search') }}"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"
+                            placeholder="Nom de la collection...">
+                    </div>
+
+                    <!-- Category -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Catégorie</label>
+                        <select name="category" class="mt-1 block w-40 border-gray-300 rounded-md shadow-sm">
+                            <option value="">Toutes</option>
+                            @foreach($categories as $cat)
+                                <option value="{{ $cat }}" {{ request('category') == $cat ? 'selected' : '' }}>
+                                    {{ $cat }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Date Start -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Date Début / Exacte</label>
+                        <input type="date" name="start_date" value="{{ request('start_date') }}"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+
+                    <!-- Date End -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Date Fin</label>
+                        <input type="date" name="end_date" value="{{ request('end_date') }}"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button type="submit"
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Filtrer</button>
+                        @if(request()->anyFilled(['search', 'category', 'start_date', 'end_date']))
+                            <a href="{{ route('collections.index') }}"
+                                class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Reset</a>
+                        @endif
+                    </div>
+                </form>
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 @foreach($collections as $collection)
                     <div

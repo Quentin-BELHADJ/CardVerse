@@ -22,7 +22,7 @@ class UserController extends Controller
     {
         $validated = $request->validate([
             'role' => 'required|in:member,admin',
-            'contact_info' => 'nullable|string|max:255',
+            'discord_handle' => 'nullable|string|max:255',
         ]);
 
         $user->update($validated);

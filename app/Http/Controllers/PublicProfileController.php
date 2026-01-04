@@ -13,13 +13,20 @@ class PublicProfileController extends Controller
         if ($user->is_banned) {
             abort(404);
         }
-        // Load user's listings that are FOR SALE only
+        // Load user's listings that are FOR SALE
         $listings = $user->listings()
             ->where('status', ListingStatus::FOR_SALE)
             ->with('card')
             ->latest()
             ->get();
 
-        return view('users.show', compact('user', 'listings'));
+        // Load user's listings that are FOR TRADE
+        $exchanges = $user->listings()
+            ->where('status', ListingStatus::FOR_TRADE)
+            ->with('card')
+            ->latest()
+            ->get();
+
+        return view('users.show', compact('user', 'listings', 'exchanges'));
     }
 }

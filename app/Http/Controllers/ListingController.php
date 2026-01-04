@@ -53,7 +53,7 @@ class ListingController extends Controller
      */
     // Dans app/Http/Controllers/ListingController.php
 
-public function update(Request $request, Listing $listing)
+    public function update(Request $request, Listing $listing)
     {
         // 1. Sécurité
         if ($listing->user_id !== Auth::id()) {
@@ -73,18 +73,18 @@ public function update(Request $request, Listing $listing)
         $listing->update([
             'status' => $validated['status'],
             'condition' => $validated['condition'],
-            'price' => ($validated['status'] === \App\Enums\ListingStatus::FOR_SALE->value) ? $validated['price'] : null,
+            'price' => ($validated['status'] === \App\Enums\ListingStatus::FOR_SALE->value) ? ($validated['price'] ?? null) : null,
         ]);
 
         // 4. LOGIQUE D'ÉCHANGE (La partie qui posait problème)
-        
+
         // On utilise la comparaison stricte avec l'Enum (grâce au cast du Modèle)
         if ($listing->status === \App\Enums\ListingStatus::FOR_TRADE) {
-            
+
             // MAGIE : Si 'target_cards' est rempli (ex: ID 6), on sauvegarde.
             // Si c'est vide ou null, on met [] -> "Ouvert à toute proposition".
             $listing->targetCards()->sync($validated['target_cards'] ?? []);
-            
+
         } else {
             // Si on n'est plus en échange, on nettoie
             $listing->targetCards()->detach();
@@ -95,18 +95,35 @@ public function update(Request $request, Listing $listing)
     /**
      * Affiche la "Zone d'Échange" publique (Cartes des autres utilisateurs).
      */
-    public function indexExchanges()
+    public function indexExchanges(Request $request)
     {
-        // 1. On récupère TOUS les listings avec le statut "En échange"
-        // 2. On exclut ceux de l'utilisateur connecté (on ne s'échange pas à soi-même)
-        // 3. On charge les relations 'card' et 'user' pour l'affichage
-        $listings = Listing::where('status', \App\Enums\ListingStatus::FOR_TRADE)
-                        ->where('user_id', '!=', Auth::id()) 
-                        ->with(['card', 'user'])
-                        ->latest()
-                        ->paginate(12);
+        // Query builder for listings
+        $query = Listing::where('status', \App\Enums\ListingStatus::FOR_TRADE)
+            ->whereHas('user', function ($q) {
+                $q->where('is_banned', false);
+            })
+            ->with(['card', 'user']);
 
-        return view('listings.exchanges', compact('listings'));
+        // Filter by Category
+        if ($request->filled('category')) {
+            $query->whereHas('card.collection', function ($q) use ($request) {
+                $q->where('category', $request->category);
+            });
+        }
+
+        // Search by Name
+        if ($request->filled('search')) {
+            $query->whereHas('card', function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        $listings = $query->latest()->paginate(12);
+
+        // Get distinct categories for the filter
+        $categories = \App\Models\Collection::select('category')->distinct()->orderBy('category')->pluck('category');
+
+        return view('listings.exchanges', compact('listings', 'categories'));
     }
 
     /**

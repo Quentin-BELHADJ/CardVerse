@@ -38,6 +38,13 @@ class MarketplaceController extends Controller
             });
         }
 
+        // Filter by Category
+        if ($request->filled('category')) {
+            $query->whereHas('card.collection', function ($q) use ($request) {
+                $q->where('category', $request->category);
+            });
+        }
+
         // Search by Name
         if ($request->filled('search')) {
             $query->whereHas('card', function ($q) use ($request) {
@@ -47,7 +54,9 @@ class MarketplaceController extends Controller
 
         $listings = $query->latest()->simplePaginate(20);
         $collections = \App\Models\Collection::orderBy('name')->get();
+        // Get distinct categories
+        $categories = \App\Models\Collection::select('category')->distinct()->orderBy('category')->pluck('category');
 
-        return view('marketplace.index', compact('listings', 'collections'));
+        return view('marketplace.index', compact('listings', 'collections', 'categories'));
     }
 }

@@ -56,7 +56,46 @@
                             </div>
                         </div>
                     @empty
-                        <p class="text-gray-500 col-span-full">Cet utilisateur n'a aucune carte en vente pas ce moment.</p>
+                        <p class="text-gray-500 col-span-full">Cet utilisateur n'a aucune carte en vente pour le moment.</p>
+                    @endforelse
+                </div>
+            </div>
+
+            <!-- User's Exchanges -->
+            <div class="bg-white p-6 shadow sm:rounded-lg">
+                <header class="mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Cartes en échange ({{ $exchanges->count() }})</h3>
+                </header>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    @forelse ($exchanges as $exchange)
+                        <div class="border rounded-lg overflow-hidden hover:shadow-md transition">
+                            <div class="h-40 bg-gray-200 flex items-center justify-center">
+                                @if($exchange->card->image_url)
+                                    <img src="{{ $exchange->card->image_url }}" alt="{{ $exchange->card->name }}"
+                                        class="object-contain w-full h-full">
+                                @else
+                                    <span class="text-xs text-gray-500">No Image</span>
+                                @endif
+                            </div>
+                            <div class="p-3">
+                                <h4 class="font-bold text-gray-800">{{ $exchange->card->name }}</h4>
+                                <div class="flex justify-between items-center mt-2">
+                                    <span class="text-indigo-600 font-bold">
+                                        @if($exchange->price)
+                                            {{ $exchange->price }} €
+                                        @else
+                                            Échange
+                                        @endif
+                                    </span>
+                                    <span
+                                        class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">{{ $exchange->condition->value }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    @empty
+                        <p class="text-gray-500 col-span-full">Cet utilisateur n'a aucune carte en échange pour le moment.
+                        </p>
                     @endforelse
                 </div>
             </div>

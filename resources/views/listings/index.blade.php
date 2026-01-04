@@ -78,8 +78,10 @@
 
                                 <!-- Action Buttons (Visible by default) -->
                                 <div x-show="!editMode && !sellMode && !tradeMode" class="flex gap-2">
-                                    <button @click="editMode = true"
-                                        class="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">Modifier</button>
+                                    @if($listing->status === \App\Enums\ListingStatus::COLLECTION)
+                                        <button @click="editMode = true"
+                                            class="px-3 py-1 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300">Modifier</button>
+                                    @endif
 
                                     @if($listing->status === \App\Enums\ListingStatus::FOR_SALE)
                                         <form method="POST" action="{{ route('listings.update', $listing) }}">
@@ -162,6 +164,7 @@
                                 <div x-show="tradeMode" class="bg-purple-50 p-2 rounded w-full" x-data="{ 
                                             search: '', 
                                             results: [], 
+                                            hoveredImage: null,
                                             selected: {{ $listing->targetCards->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->toJson() }},
                                             async doSearch() {
                                                 if (this.search.length < 2) { this.results = []; return; }
@@ -202,23 +205,35 @@
                                         </div>
 
                                         <!-- Search -->
-                                        <div class="relative mb-2">
-                                            <input type="text" x-model="search" @input.debounce.300ms="doSearch()"
-                                                placeholder="Chercher une carte..."
-                                                class="w-full text-sm border-purple-300 rounded">
-                                            <div x-show="results.length > 0"
-                                                class="absolute z-10 w-full bg-white border border-gray-300 rounded shadow-lg max-h-40 overflow-y-auto mt-1">
-                                                <template x-for="res in results" :key="res.id">
-                                                    <div @click="add(res)"
-                                                        class="px-3 py-2 hover:bg-purple-100 cursor-pointer text-sm"
-                                                        x-text="res.name"></div>
-                                                </template>
+                                            <div class="relative mb-2 z-30">
+                                                <input type="text" x-model="search" @input.debounce.300ms="doSearch()"
+                                                    placeholder="Chercher une carte..."
+                                                    class="w-full text-sm border-purple-300 rounded">
+                                                
+                                                <div x-show="results.length > 0"
+                                                    class="absolute z-10 w-full bg-white border border-gray-300 rounded shadow-lg max-h-40 overflow-y-auto mt-1">
+                                                    <template x-for="res in results" :key="res.id">
+                                                        <div @click="add(res)"
+                                                            class="px-3 py-2 hover:bg-purple-100 cursor-pointer text-sm flex items-center gap-3 border-b last:border-b-0 border-gray-100">
+                                                            <div class="h-10 w-8 bg-gray-100 shrink-0 rounded overflow-hidden border border-gray-200 flex items-center justify-center">
+                                                                <template x-if="res.image_url">
+                                                                    <img :src="res.image_url" class="w-full h-full object-contain">
+                                                                </template>
+                                                                <template x-if="!res.image_url">
+                                                                    <span class="text-[10px] text-gray-400">?</span>
+                                                                </template>
+                                                            </div>
+                                                            <span x-text="res.name" class="font-medium"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
                                             </div>
-                                        </div>
 
                                         <div class="flex gap-2">
                                             <button type="submit"
-                                                class="px-3 py-1 bg-purple-600 text-white rounded text-sm">Valider
+                                                :disabled="selected.length === 0"
+                                                :class="selected.length === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'"
+                                                class="px-3 py-1 text-white rounded text-sm transition-colors">Valider
                                                 Échange</button>
                                             <button type="button" @click="tradeMode = false"
                                                 class="text-gray-500 text-sm underline">Annuler</button>
