@@ -13,19 +13,26 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
+     * Les attributs qui peuvent être assignés en masse.
+     * 'discord_handle' remplace l'ancien 'contact_info' générique.
+     * 'is_banned' permet de gérer le bannissement des utilisateurs.
      *
      * @var list<string>
      */
     protected $fillable = ['name', 'email', 'password', 'role', 'contact_info', 'discord_handle', 'is_banned']; //
 
+    /**
+     * Relation : Un utilisateur peut avoir plusieurs listings (cartes dans sa collection).
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
     public function listings()
     {
         return $this->hasMany(Listing::class);
     }
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Les attributs cachés lors de la sérialisation (tableaux/JSON).
      *
      * @var list<string>
      */
@@ -35,7 +42,7 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * Les conversions de type automatiques.
      *
      * @return array<string, string>
      */
@@ -48,7 +55,10 @@ class User extends Authenticatable
     }
 
     /**
-     * Vérifie si l'utilisateur est un administrateur.
+     * Vérifie si l'utilisateur possède le rôle d'administrateur.
+     * Utilisé pour les Policies et Gates.
+     *
+     * @return bool
      */
     public function isAdmin(): bool
     {

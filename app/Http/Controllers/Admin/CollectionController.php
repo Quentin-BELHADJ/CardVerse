@@ -8,13 +8,22 @@ use Illuminate\Http\Request;
 
 class CollectionController extends Controller
 {
-    // Affiche le formulaire de création
+    /**
+     * Affiche le formulaire de création d'une nouvelle collection.
+     *
+     * @return \Illuminate\View\View
+     */
     public function create()
     {
         return view('admin.collections.create');
     }
 
-    // Enregistre la nouvelle collection
+    /**
+     * Enregistre une nouvelle collection dans la base de données.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -28,13 +37,25 @@ class CollectionController extends Controller
         return redirect()->route('collections.index')
             ->with('success', 'Nouvelle collection ajoutée avec succès !');
     }
-    // Affiche le formulaire d'édition
+
+    /**
+     * Affiche le formulaire d'édition d'une collection existante.
+     *
+     * @param  \App\Models\Collection  $collection
+     * @return \Illuminate\View\View
+     */
     public function edit(Collection $collection)
     {
         return view('admin.collections.edit', compact('collection'));
     }
 
-    // Traite la modification en base de données
+    /**
+     * Met à jour les informations d'une collection.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Collection  $collection
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function update(Request $request, Collection $collection)
     {
         $validated = $request->validate([
@@ -50,19 +71,35 @@ class CollectionController extends Controller
             ->with('success', 'Collection mise à jour avec succès !');
     }
 
-    // N'oublie pas la méthode de suppression si tu en as besoin
-    // N'oublie pas la méthode de suppression si tu en as besoin
+    /**
+     * Supprime une collection de la base de données.
+     *
+     * @param  \App\Models\Collection  $collection
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function destroy(Collection $collection)
     {
         $collection->delete();
         return redirect()->route('collections.index')->with('success', 'Collection supprimée.');
     }
 
+    /**
+     * Affiche le formulaire d'importation de collection via JSON.
+     *
+     * @return \Illuminate\View\View
+     */
     public function import()
     {
         return view('admin.collections.import');
     }
 
+    /**
+     * Traite l'importation d'une collection et de ses cartes depuis un fichier JSON.
+     * Valide le format du fichier et crée les entrées correspondantes en base.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function storeImport(Request $request)
     {
         $request->validate([
@@ -76,19 +113,19 @@ class CollectionController extends Controller
             return back()->withErrors(['json_file' => 'Fichier JSON invalide.']);
         }
 
-        // Validate basic structure
+        // Validation de la structure de base
         if (!isset($json['name']) || !isset($json['category'])) {
             return back()->withErrors(['json_file' => 'Format JSON incorrect (name ou category manquants).']);
         }
 
-        // Create Collection
+        // Création de la Collection
         $collection = Collection::create([
             'name' => $json['name'],
             'category' => $json['category'],
             'release_date' => $json['release_date'] ?? null,
         ]);
 
-        // Create Cards
+        // Création des Cartes associées
         $count = 0;
         if (isset($json['cards']) && is_array($json['cards'])) {
             foreach ($json['cards'] as $cardData) {

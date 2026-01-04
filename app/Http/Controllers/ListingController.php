@@ -14,17 +14,26 @@ use Illuminate\Validation\Rule;
 class ListingController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Affiche la liste des cartes appartenant à l'utilisateur connecté.
+     * Cette méthode récupère les listings de l'utilisateur, charge les relations 'card',
+     * et les retourne à la vue 'listings.index'.
+     *
+     * @return \Illuminate\View\View
      */
     public function index()
     {
-        // Get the authenticated user's listings
+        // Récupère les listings de l'utilisateur authentifié, triés par date de création décroissante
         $listings = Auth::user()->listings()->with('card')->latest()->get();
         return view('listings.index', compact('listings'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Enregistre une nouvelle carte dans la collection de l'utilisateur.
+     * Crée une nouvelle instance de Listing attachée à l'utilisateur et à la carte spécifiée.
+     * Le statut par défaut est 'COLLECTION' (pas en vente).
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
@@ -33,104 +42,117 @@ class ListingController extends Controller
             'condition' => ['required', Rule::enum(ListingCondition::class)],
         ]);
 
-        // Check if user already has this card listed? 
-        // Requirements technically allow multiple copies, so we won't restrict it unless specified.
-        // But usually "Add a card to collection" implies creating a new Listing entry.
-
         Listing::create([
             'user_id' => Auth::id(),
             'card_id' => $request->card_id,
-            'status' => ListingStatus::COLLECTION, // Default status
-            'condition' => $request->condition, // Casts handle string to Enum conversion usually, or valid value
-            'price' => null, // Not for sale initially
+            'status' => ListingStatus::COLLECTION, // Statut par défaut : dans la collection personnelle
+            'condition' => $request->condition,
+            'price' => null, // Pas de prix initialement car pas en vente
         ]);
 
         return back()->with('success', 'Carte ajoutée à votre collection !');
     }
 
     /**
-     * Update the specified resource in storage.
+     * Met à jour les informations d'une carte (Listing) existante.
+     * Gère le changement de statut (Collection, Vente, Échange), le prix,
+     * et la liste des cartes recherchées pour un échange.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Listing  $listing
+     * @return \Illuminate\Http\RedirectResponse
      */
-    // Dans app/Http/Controllers/ListingController.php
-
     public function update(Request $request, Listing $listing)
     {
-        // 1. Sécurité
+        // 1. Sécurité : Vérifie que l'utilisateur est bien le propriétaire de la carte
         if ($listing->user_id !== Auth::id()) {
             abort(403);
         }
 
-        // 2. Validation
+        // 2. Validation des données du formulaire
         $validated = $request->validate([
             'status' => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\ListingStatus::class)],
             'condition' => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\ListingCondition::class)],
             'price' => 'nullable|numeric|min:0',
-            'target_cards' => 'nullable|array|max:5',
+            'target_cards' => 'nullable|array|max:5', // Maximum 5 cartes cibles pour l'échange
             'target_cards.*' => 'exists:cards,id',
         ]);
 
-        // 3. Mise à jour des infos de base
+        // 3. Mise à jour des informations de base
+        // Si le statut n'est pas 'En vente', on force le prix à null
+        $price = ($validated['status'] === \App\Enums\ListingStatus::FOR_SALE->value) ? ($validated['price'] ?? null) : null;
+
         $listing->update([
             'status' => $validated['status'],
             'condition' => $validated['condition'],
-            'price' => ($validated['status'] === \App\Enums\ListingStatus::FOR_SALE->value) ? ($validated['price'] ?? null) : null,
+            'price' => $price,
         ]);
 
-        // 4. LOGIQUE D'ÉCHANGE (La partie qui posait problème)
-
-        // On utilise la comparaison stricte avec l'Enum (grâce au cast du Modèle)
+        // 4. Logique spécifique pour le mode Échange
         if ($listing->status === \App\Enums\ListingStatus::FOR_TRADE) {
-
-            // MAGIE : Si 'target_cards' est rempli (ex: ID 6), on sauvegarde.
-            // Si c'est vide ou null, on met [] -> "Ouvert à toute proposition".
+            // Synchronise les cartes recherchées (relation ManyToMany)
+            // Si aucune carte n'est sélectionnée, cela signifie "Ouvert à tout"
             $listing->targetCards()->sync($validated['target_cards'] ?? []);
-
         } else {
-            // Si on n'est plus en échange, on nettoie
+            // Si la carte n'est plus en échange, on supprime les préférences d'échange
             $listing->targetCards()->detach();
         }
 
         return back()->with('success', 'Carte mise à jour avec succès !');
     }
+
     /**
-     * Affiche la "Zone d'Échange" publique (Cartes des autres utilisateurs).
+     * Affiche la "Zone d'Échange" publique.
+     * Liste toutes les cartes proposées à l'échange par les autres utilisateurs.
+     * Inclut des filtres pour rechercher par nom ou par catégorie (set).
+     * Filtre automatiquement les utilisateurs bannis.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\View\View
      */
     public function indexExchanges(Request $request)
     {
-        // Query builder for listings
+        // Construction de la requête de base : Cartes avec statut 'FOR_TRADE'
         $query = Listing::where('status', \App\Enums\ListingStatus::FOR_TRADE)
+            // Filtre : Exclure les listings des utilisateurs bannis
             ->whereHas('user', function ($q) {
                 $q->where('is_banned', false);
             })
             ->with(['card', 'user']);
 
-        // Filter by Category
+        // Filtre : Par Catégorie (Collection/Set)
         if ($request->filled('category')) {
             $query->whereHas('card.collection', function ($q) use ($request) {
                 $q->where('category', $request->category);
             });
         }
 
-        // Search by Name
+        // Filtre : Recherche textuelle par nom de carte
         if ($request->filled('search')) {
             $query->whereHas('card', function ($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->search . '%');
             });
         }
 
+        // Pagination des résultats (12 par page)
         $listings = $query->latest()->paginate(12);
 
-        // Get distinct categories for the filter
+        // Récupération des catégories distinctes pour le menu déroulant de filtre
         $categories = \App\Models\Collection::select('category')->distinct()->orderBy('category')->pluck('category');
 
         return view('listings.exchanges', compact('listings', 'categories'));
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Supprime une carte de la collection de l'utilisateur.
+     * Vérifie l'autorisation avant de procéder à la suppression.
+     *
+     * @param  \App\Models\Listing  $listing
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(Listing $listing)
     {
+        // Sécurité : Seul le propriétaire peut supprimer
         if ($listing->user_id !== Auth::id()) {
             abort(403);
         }

@@ -15,7 +15,9 @@ use Illuminate\View\View;
 class RegisteredUserController extends Controller
 {
     /**
-     * Display the registration view.
+     * Affiche la vue d'inscription.
+     *
+     * @return \Illuminate\View\View
      */
     public function create(): View
     {
@@ -23,7 +25,9 @@ class RegisteredUserController extends Controller
     }
 
     /**
-     * Handle an incoming registration request.
+     * Gère la requête d'inscription d'un nouvel utilisateur.
+     * Valide les données, crée l'utilisateur avec le rôle 'member' par défaut,
+     * connecte l'utilisateur et le redirige vers le tableau de bord.
      *
      * @throws \Illuminate\Validation\ValidationException
      */

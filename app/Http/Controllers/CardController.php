@@ -8,23 +8,28 @@ use Illuminate\Http\Request;
 class CardController extends Controller
 {
     /**
-     * Display the specified resource.
+     * Affiche les détails d'une carte spécifique.
+     *
+     * @param  \App\Models\Card  $card
+     * @return \Illuminate\View\View
      */
     public function show(Card $card)
     {
-        // Reuse existing public show logic? 
-        // Or if this controller is new/separate from Admin/CardController.
-        // It seems there is a public CardController already mentioned in routes.
-        // Let's create it properly if it doesn't exist, or update it.
-        // The file list didn't show it in the root logs but routes used it.
-        // Checking if it exists first might be wise, but I'll write it to be safe/complete.
         return view('cards.show', compact('card'));
     }
 
+    /**
+     * Recherche des cartes par nom via AJAX (API).
+     * Renvoie les résultats au format JSON (pour les menus déroulants, etc.).
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
     public function search(Request $request)
     {
         $query = $request->get('q');
 
+        // Nécessite au moins 2 caractères pour lancer la recherche
         if (strlen($query) < 2) {
             return response()->json([]);
         }
