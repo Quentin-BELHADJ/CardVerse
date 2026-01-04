@@ -94,6 +94,16 @@ class ListingController extends Controller
 
         return back()->with('success', 'Fiche mise à jour !');
     }
+    public function indexExchanges()
+    {
+        // On récupère les listings avec le statut "En échange"
+        // On charge aussi la relation 'card' et 'user' pour optimiser l'affichage
+        $listings = \App\Models\Listing::where('status', 'En échange')
+                        ->with(['card', 'user']) 
+                        ->simplePaginate(10); // Pagination comme demandé dans le TP
+
+        return view('listings.exchanges', ['listings' => $listings]);
+    }
 
     /**
      * Remove the specified resource from storage.
