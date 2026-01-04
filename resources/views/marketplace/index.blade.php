@@ -12,6 +12,25 @@
             <div class="p-4 bg-white shadow sm:rounded-lg">
                 <form method="GET" action="{{ route('marketplace.index') }}" class="flex flex-wrap gap-4 items-end">
                     
+                    <!-- Search -->
+                     <div class="flex-grow min-w-[200px]">
+                        <label class="block text-sm font-medium text-gray-700">Recherche</label>
+                        <input type="text" name="search" value="{{ request('search') }}" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" placeholder="Nom de la carte...">
+                    </div>
+
+                    <!-- Collection -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Collection</label>
+                        <select name="collection_id" class="mt-1 block w-48 border-gray-300 rounded-md shadow-sm">
+                            <option value="">Toutes les collections</option>
+                            @foreach($collections as $col)
+                                <option value="{{ $col->id }}" {{ request('collection_id') == $col->id ? 'selected' : '' }}>
+                                    {{ $col->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Condition</label>
                         <select name="condition" class="mt-1 block w-40 border-gray-300 rounded-md shadow-sm">
@@ -38,39 +57,35 @@
             </div>
 
             <!-- Grille des Offres -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem;">
                 @forelse ($listings as $listing)
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg hover:shadow-md transition-shadow">
-                         <!-- Image -->
-                        <div class="h-48 bg-gray-200 w-full flex items-center justify-center overflow-hidden">
-                            @if($listing->card->image_url)
-                                <img src="{{ $listing->card->image_url }}" alt="{{ $listing->card->name }}" class="object-contain w-full h-full">
+                    <div class="bg-white p-2 rounded-lg shadow border border-gray-200 flex flex-col justify-between">
+                        <!-- Image -->
+                        <div class="flex justify-center mb-2">
+                             @if($listing->card->image_url)
+                                <img src="{{ $listing->card->image_url }}" alt="{{ $listing->card->name }}" class="rounded-md w-full h-auto object-contain" style="max-height: 200px;">
                             @else
-                                <span class="text-gray-400">No Image</span>
+                                <div class="w-full h-40 bg-gray-100 flex items-center justify-center text-gray-400 rounded-md">
+                                    No Image
+                                </div>
                             @endif
                         </div>
                         
-                        <div class="p-4">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h3 class="font-bold text-lg text-gray-900 truncate">{{ $listing->card->name }}</h3>
-                                    <p class="text-sm text-gray-500">{{ $listing->card->rarity }}</p>
-                                </div>
-                                <span class="font-bold text-lg text-indigo-600">
-                                    {{ number_format($listing->price, 2) }} €
-                                </span>
+                        <!-- Content -->
+                        <div class="p-2 text-center">
+                            <h3 class="font-bold text-gray-900 truncate text-sm" title="{{ $listing->card->name }}">{{ $listing->card->name }}</h3>
+                            <p class="text-xs text-gray-500 mb-2">{{ $listing->card->rarity }}</p>
+                            
+                            <div class="bg-gray-50 rounded p-2 mb-2">
+                                <p class="text-lg font-bold text-indigo-600">{{ number_format($listing->price, 2) }} €</p>
+                                <p class="text-xs text-gray-500">{{ $listing->condition->value }}</p>
                             </div>
 
-                            <div class="mt-4 pt-4 border-t border-gray-100">
-                                <p class="text-sm text-gray-600"><span class="font-medium">État:</span> {{ $listing->condition->value }}</p>
-                                <p class="text-sm text-gray-600 mt-1"><span class="font-medium">Vendeur:</span> {{ $listing->user->name }}</p>
-                                
-                                <div class="mt-4">
-                                     <a href="{{ route('users.show', $listing->user) }}" class="block w-full text-center px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded hover:bg-gray-800">
-                                        Voir le profil
-                                    </a>
-                                </div>
-                            </div>
+                            <p class="text-xs text-gray-400 mb-3">Vendeur: <span class="font-medium text-gray-600">{{ $listing->user->name }}</span></p>
+
+                            <a href="{{ route('users.show', $listing->user) }}" class="block w-full text-center px-4 py-2 bg-gray-900 text-white text-xs font-bold rounded hover:bg-gray-800 transition">
+                                Voir le profil
+                            </a>
                         </div>
                     </div>
                 @empty

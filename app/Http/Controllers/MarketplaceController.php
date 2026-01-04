@@ -31,11 +31,23 @@ class MarketplaceController extends Controller
             $query->where('condition', $request->condition);
         }
 
-        // Search by card name? (Bonus, but good for "Filtres")
-        // "Filtrer les listings par état ou par prix" matches requirements.
+        // Filter by Collection
+        if ($request->filled('collection_id')) {
+            $query->whereHas('card', function ($q) use ($request) {
+                $q->where('collection_id', $request->collection_id);
+            });
+        }
+
+        // Search by Name
+        if ($request->filled('search')) {
+            $query->whereHas('card', function ($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%');
+            });
+        }
 
         $listings = $query->latest()->simplePaginate(20);
+        $collections = \App\Models\Collection::orderBy('name')->get();
 
-        return view('marketplace.index', compact('listings'));
+        return view('marketplace.index', compact('listings', 'collections'));
     }
 }
