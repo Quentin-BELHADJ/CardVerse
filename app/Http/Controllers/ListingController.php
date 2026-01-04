@@ -6,113 +6,106 @@ use App\Models\Listing;
 use App\Models\Card;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate;
+
+use App\Enums\ListingStatus;
+use App\Enums\ListingCondition;
+use Illuminate\Validation\Rule;
 
 class ListingController extends Controller
 {
     /**
-     * Affiche le formulaire pour ajouter une carte (CREATE)
-     * Workshop: Similaire à "Add a new product"
+     * Display a listing of the resource.
      */
-    public function create()
+    public function index()
     {
-        // On récupère toutes les cartes pour le menu déroulant
-        $cards = Card::with('collection')->get(); 
-        return view('listings.create', ['cards' => $cards]);
+        // Get the authenticated user's listings
+        $listings = Auth::user()->listings()->with('card')->latest()->get();
+        return view('listings.index', compact('listings'));
     }
 
     /**
-     * Enregistre la nouvelle carte (STORE)
-     * Workshop: Validation + Création
+     * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
-        // 1. Validation (Sécurité)
-        $validated = $request->validate([
+        $request->validate([
             'card_id' => 'required|exists:cards,id',
-            'condition' => 'required|string',
-            'status' => 'required|in:Collection,En vente,En échange',
-            'price' => 'nullable|numeric|min:0',
+            'condition' => ['required', Rule::enum(ListingCondition::class)],
         ]);
 
-        // 2. Création (On force l'ID de l'utilisateur connecté)
+        // Check if user already has this card listed? 
+        // Requirements technically allow multiple copies, so we won't restrict it unless specified.
+        // But usually "Add a card to collection" implies creating a new Listing entry.
+
         Listing::create([
-            'user_id' => Auth::id(), // L'utilisateur connecté
-            'card_id' => $validated['card_id'],
-            'condition' => $validated['condition'],
-            'status' => $validated['status'],
-            'price' => $validated['price'],
+            'user_id' => Auth::id(),
+            'card_id' => $request->card_id,
+            'status' => ListingStatus::COLLECTION, // Default status
+            'condition' => $request->condition, // Casts handle string to Enum conversion usually, or valid value
+            'price' => null, // Not for sale initially
         ]);
 
-        // 3. Redirection
-        return redirect()->route('dashboard')->with('success', 'Carte ajoutée !');
+        return back()->with('success', 'Carte ajoutée à votre collection !');
     }
 
     /**
-     * Affiche les échanges (INDEX PUBLIC)
-     * Workshop: Similaire à "Show products" avec filtre
-     */
-    public function indexExchanges()
-    {
-        // On ne veut que les cartes "En échange"
-        // On utilise simplePaginate comme dans le TP
-        $listings = Listing::where('status', 'En échange')
-                           ->with(['card', 'user']) // Optimisation
-                           ->simplePaginate(10);
-
-        return view('listings.exchanges', ['listings' => $listings]);
-    }
-
-    /**
-     * Affiche une carte spécifique (SHOW)
-     * Workshop: Détail produit
-     */
-    public function show(Listing $listing)
-    {
-        return view('listings.show', ['listing' => $listing]);
-    }
-
-    /**
-     * Affiche le formulaire de modification (EDIT)
-     * Workshop: "Modify a product"
-     */
-    public function edit(Listing $listing)
-    {
-        // Vérification que c'est bien MA carte (Sécurité)
-        Gate::authorize('update-listing', $listing);
-
-        return view('listings.edit', ['listing' => $listing]);
-    }
-
-    /**
-     * Met à jour la carte (UPDATE)
-     * Workshop: Méthode PATCH
+     * Update the specified resource in storage.
      */
     public function update(Request $request, Listing $listing)
     {
-        Gate::authorize('update-listing', $listing);
+        // Ensure the user owns this listing
+        if ($listing->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        // Logic based on action
+        $status = $request->status ? ListingStatus::tryFrom($request->status) : $listing->status;
+
+        // If "Retirer de la vente" or "Retirer des échanges", status goes back to Collection
+        // But the UI might just send the desired status directly.
+        // Let's validate fully.
 
         $validated = $request->validate([
-            'condition' => 'string', // On peut changer l'état si elle s'abime
-            'status' => 'required|in:Collection,En vente,En échange',
-            'price' => 'nullable|numeric|min:0',
+            'status' => ['required', Rule::enum(ListingStatus::class)],
+            'condition' => ['required', Rule::enum(ListingCondition::class)],
+            'price' => 'nullable|numeric|min:0|required_if:status,' . ListingStatus::FOR_SALE->value,
+            'target_cards' => 'nullable|array|max:5',
+            'target_cards.*' => 'exists:cards,id',
         ]);
 
-        $listing->update($validated);
+        // Specific logic:
+        if ($validated['status'] === ListingStatus::COLLECTION) {
+            $validated['price'] = null;
+            // Clear target cards handled below
+        }
 
-        return redirect('/listings/' . $listing->id);
+        $listing->update([
+            'status' => $validated['status'],
+            'condition' => $validated['condition'],
+            'price' => $validated['price'] ?? null,
+        ]);
+
+        // Sync target cards if provided, or clear if status is not Trade
+        if ($validated['status'] === ListingStatus::FOR_TRADE && isset($validated['target_cards'])) {
+            $listing->targetCards()->sync($validated['target_cards']);
+        } else {
+            $listing->targetCards()->detach();
+        }
+
+        return back()->with('success', 'Fiche mise à jour !');
     }
 
     /**
-     * Supprime la carte (DESTROY)
-     * Workshop: Méthode DELETE
+     * Remove the specified resource from storage.
      */
     public function destroy(Listing $listing)
     {
-        Gate::authorize('update-listing', $listing);
+        if ($listing->user_id !== Auth::id()) {
+            abort(403);
+        }
 
         $listing->delete();
 
-        return redirect('/dashboard')->with('success', 'Carte retirée de la collection.');
+        return back()->with('success', 'Carte retirée de votre collection.');
     }
 }

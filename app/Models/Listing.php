@@ -6,12 +6,24 @@ use Illuminate\Database\Eloquent\Model;
 
 class Listing extends Model
 {
-    protected $fillable = ['user_id', 'card_id', 'price', 'status', 'condition']; // [cite: 25]
-    public function user() { return $this->belongsTo(User::class); }
-    public function card() { return $this->belongsTo(Card::class); }
+    protected $fillable = ['user_id', 'card_id', 'price', 'status', 'condition'];
 
-    // app/Models/User.php
-    public function listings() {
-        return $this->hasMany(Listing::class);
+    protected $casts = [
+        'status' => \App\Enums\ListingStatus::class,
+        'condition' => \App\Enums\ListingCondition::class,
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+    public function card()
+    {
+        return $this->belongsTo(Card::class);
+    }
+
+    public function targetCards()
+    {
+        return $this->belongsToMany(Card::class, 'listing_target_cards');
     }
 }
