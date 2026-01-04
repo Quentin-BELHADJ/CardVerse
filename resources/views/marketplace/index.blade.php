@@ -44,7 +44,7 @@
                          <!-- Image -->
                         <div class="h-48 bg-gray-200 w-full flex items-center justify-center overflow-hidden">
                             @if($listing->card->image_url)
-                                <img src="{{ $listing->card->image_url }}" alt="{{ $listing->card->name }}" class="object-cover w-full h-full">
+                                <img src="{{ $listing->card->image_url }}" alt="{{ $listing->card->name }}" class="object-contain w-full h-full">
                             @else
                                 <span class="text-gray-400">No Image</span>
                             @endif
@@ -66,8 +66,8 @@
                                 <p class="text-sm text-gray-600 mt-1"><span class="font-medium">Vendeur:</span> {{ $listing->user->name }}</p>
                                 
                                 <div class="mt-4">
-                                     <a href="mailto:{{ $listing->user->email }}" class="block w-full text-center px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded hover:bg-gray-800">
-                                        Contacter
+                                     <a href="{{ route('users.show', $listing->user) }}" class="block w-full text-center px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded hover:bg-gray-800">
+                                        Voir le profil
                                     </a>
                                 </div>
                             </div>

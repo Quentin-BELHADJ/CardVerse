@@ -71,6 +71,8 @@ Route::get('/marketplace', [App\Http\Controllers\MarketplaceController::class, '
 Route::middleware(['auth', 'can:admin-access'])->prefix('admin')->name('admin.')->group(function () {
 
     // Pour les collections : on ne garde que les routes de traitement
+    Route::get('collections/import', [AdminCollectionController::class, 'import'])->name('collections.import');
+    Route::post('collections/import', [AdminCollectionController::class, 'storeImport'])->name('collections.storeImport');
     Route::resource('collections', AdminCollectionController::class)->except(['index', 'show']);
 
     // Pour les cartes : idem
@@ -79,6 +81,7 @@ Route::middleware(['auth', 'can:admin-access'])->prefix('admin')->name('admin.')
 
 
 // Routes publiques
+Route::get('/profile/{user}', [App\Http\Controllers\PublicProfileController::class, 'show'])->name('users.show');
 Route::get('/cards/search', [CardController::class, 'search'])->name('cards.search');
 Route::resource('cards', CardController::class)->only(['show']);
 Route::get('/exchanges', [ListingController::class, 'indexExchanges'])->name('listings.exchanges');

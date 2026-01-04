@@ -6,11 +6,17 @@
             </h2>
 
             @can('admin-access')
-                <a href="{{ route('admin.collections.create') }}">
-                    <x-primary-button>
-                        + Nouvelle Collection
-                    </x-primary-button>
-                </a>
+                <div class="space-x-2 flex items-center">
+                    <a href="{{ route('admin.collections.import') }}"
+                        class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700 focus:bg-green-700 active:bg-green-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                        Importer JSON
+                    </a>
+                    <a href="{{ route('admin.collections.create') }}">
+                        <x-primary-button>
+                            + Nouvelle Collection
+                        </x-primary-button>
+                    </a>
+                </div>
             @endcan
         </div>
     </x-slot>
@@ -19,7 +25,8 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 @foreach($collections as $collection)
-                    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-4 flex items-center justify-between group border border-gray-100 hover:shadow-md transition">
+                    <div
+                        class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-4 flex items-center justify-between group border border-gray-100 hover:shadow-md transition">
 
                         <a href="{{ route('collections.show', $collection) }}" class="flex-grow">
                             <div class="flex items-center space-x-2">
@@ -42,7 +49,7 @@
                                 </a>
 
                                 <form action="{{ route('admin.collections.destroy', $collection) }}" method="POST"
-                                      onsubmit="return confirm('Supprimer définitivement cette collection ?');">
+                                    onsubmit="return confirm('Supprimer définitivement cette collection ?');">
                                     @csrf
                                     @method('DELETE')
                                     <x-danger-button type="submit" class="!py-1 !px-2 !text-[10px] w-full justify-center">
