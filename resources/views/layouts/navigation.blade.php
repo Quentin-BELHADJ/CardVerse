@@ -31,7 +31,7 @@
                     </x-nav-link>
 
                     @auth
-                        <x-nav-link :href="route('listings.index')" :active="request()->routeIs('listings.*')">
+                        <x-nav-link :href="route('listings.index')" :active="request()->routeIs('listings.index', 'listings.create', 'listings.edit', 'listings.show')">
                             {{ __('Ma Collection') }}
                         </x-nav-link>
                     @endauth

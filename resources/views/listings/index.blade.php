@@ -190,11 +190,10 @@
                                         <!-- Selected List -->
                                         <div class="flex flex-wrap gap-1 mb-2">
                                             <template x-for="(card, index) in selected" :key="card.id">
-                                                <span
-                                                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-200 text-purple-800">
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-200 text-purple-800">
                                                     <span x-text="card.name"></span>
-                                                    <button type="button" @click="remove(index)"
-                                                        class="ml-1 text-purple-500 hover:text-purple-700">×</button>
+                                                    <button type="button" @click="remove(index)" class="ml-1 text-purple-500 hover:text-purple-700">×</button>
+                                                    
                                                     <input type="hidden" name="target_cards[]" :value="card.id">
                                                 </span>
                                             </template>

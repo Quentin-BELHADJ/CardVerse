@@ -84,8 +84,8 @@ Route::middleware(['auth', 'can:admin-access'])->prefix('admin')->name('admin.')
 Route::get('/profile/{user}', [App\Http\Controllers\PublicProfileController::class, 'show'])->name('users.show');
 Route::get('/cards/search', [CardController::class, 'search'])->name('cards.search');
 Route::resource('cards', CardController::class)->only(['show']);
-Route::get('/exchanges', [ListingController::class, 'indexExchanges'])->name('listings.exchanges');
 Route::get('/listings/{listing}', [ListingController::class, 'show'])->name('listings.show');
+Route::get('/exchanges', [App\Http\Controllers\ListingController::class, 'indexExchanges'])->name('listings.exchanges');
 
 // Routes Admin
 Route::middleware(['auth', 'can:admin-access'])->prefix('admin')->name('admin.')->group(function () {

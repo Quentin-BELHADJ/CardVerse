@@ -51,58 +51,62 @@ class ListingController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Listing $listing)
+    // Dans app/Http/Controllers/ListingController.php
+
+public function update(Request $request, Listing $listing)
     {
-        // Ensure the user owns this listing
+        // 1. Sécurité
         if ($listing->user_id !== Auth::id()) {
             abort(403);
         }
 
-        // Logic based on action
-        $status = $request->status ? ListingStatus::tryFrom($request->status) : $listing->status;
-
-        // If "Retirer de la vente" or "Retirer des échanges", status goes back to Collection
-        // But the UI might just send the desired status directly.
-        // Let's validate fully.
-
+        // 2. Validation
         $validated = $request->validate([
-            'status' => ['required', Rule::enum(ListingStatus::class)],
-            'condition' => ['required', Rule::enum(ListingCondition::class)],
-            'price' => 'nullable|numeric|min:0|required_if:status,' . ListingStatus::FOR_SALE->value,
+            'status' => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\ListingStatus::class)],
+            'condition' => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\ListingCondition::class)],
+            'price' => 'nullable|numeric|min:0',
             'target_cards' => 'nullable|array|max:5',
             'target_cards.*' => 'exists:cards,id',
         ]);
 
-        // Specific logic:
-        if ($validated['status'] === ListingStatus::COLLECTION) {
-            $validated['price'] = null;
-            // Clear target cards handled below
-        }
-
+        // 3. Mise à jour des infos de base
         $listing->update([
             'status' => $validated['status'],
             'condition' => $validated['condition'],
-            'price' => $validated['price'] ?? null,
+            'price' => ($validated['status'] === \App\Enums\ListingStatus::FOR_SALE->value) ? $validated['price'] : null,
         ]);
 
-        // Sync target cards if provided, or clear if status is not Trade
-        if ($validated['status'] === ListingStatus::FOR_TRADE && isset($validated['target_cards'])) {
-            $listing->targetCards()->sync($validated['target_cards']);
+        // 4. LOGIQUE D'ÉCHANGE (La partie qui posait problème)
+        
+        // On utilise la comparaison stricte avec l'Enum (grâce au cast du Modèle)
+        if ($listing->status === \App\Enums\ListingStatus::FOR_TRADE) {
+            
+            // MAGIE : Si 'target_cards' est rempli (ex: ID 6), on sauvegarde.
+            // Si c'est vide ou null, on met [] -> "Ouvert à toute proposition".
+            $listing->targetCards()->sync($validated['target_cards'] ?? []);
+            
         } else {
+            // Si on n'est plus en échange, on nettoie
             $listing->targetCards()->detach();
         }
 
-        return back()->with('success', 'Carte mise à jour !');
+        return back()->with('success', 'Carte mise à jour avec succès !');
     }
+    /**
+     * Affiche la "Zone d'Échange" publique (Cartes des autres utilisateurs).
+     */
     public function indexExchanges()
     {
-        // On récupère les listings avec le statut "En échange"
-        // On charge aussi la relation 'card' et 'user' pour optimiser l'affichage
-        $listings = \App\Models\Listing::where('status', 'En échange')
-                        ->with(['card', 'user']) 
-                        ->simplePaginate(10); // Pagination comme demandé dans le TP
+        // 1. On récupère TOUS les listings avec le statut "En échange"
+        // 2. On exclut ceux de l'utilisateur connecté (on ne s'échange pas à soi-même)
+        // 3. On charge les relations 'card' et 'user' pour l'affichage
+        $listings = Listing::where('status', \App\Enums\ListingStatus::FOR_TRADE)
+                        ->where('user_id', '!=', Auth::id()) 
+                        ->with(['card', 'user'])
+                        ->latest()
+                        ->paginate(12);
 
-        return view('listings.exchanges', ['listings' => $listings]);
+        return view('listings.exchanges', compact('listings'));
     }
 
     /**
