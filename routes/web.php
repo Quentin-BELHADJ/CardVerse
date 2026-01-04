@@ -7,6 +7,18 @@ use App\Http\Controllers\CardController;
 use App\Http\Controllers\Admin\CardController as AdminCardController;
 use Illuminate\Support\Facades\Route;
 
+// À ajouter en haut de routes/web.php
+use Illuminate\Support\Facades\Auth;
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/check-ban', function () {
+        if (auth()->user()->is_banned) {
+            Auth::logout();
+            return redirect()->route('login')->withErrors(['email' => 'Votre compte a été suspendu.']);
+        }
+    });
+});
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -38,15 +50,18 @@ Route::middleware(['auth', 'can:admin-access'])->prefix('admin')->name('admin.')
 });
 
 
-
-
-
 // Routes publiques
 Route::resource('cards', CardController::class)->only(['show']);
 
 // Routes Admin
 Route::middleware(['auth', 'can:admin-access'])->prefix('admin')->name('admin.')->group(function () {
-    Route::resource('cards', AdminCardController::class)->except(['index', 'show']);
+    Route::resource('collections', AdminCollectionController::class);
+    Route::resource('cards', AdminCardController::class);
+
+    // CRUD Utilisateurs + Route de Bannissement
+    Route::resource('users', App\Http\Controllers\Admin\UserController::class);
+    Route::post('users/{user}/toggle-ban', [App\Http\Controllers\Admin\UserController::class, 'toggleBan'])->name('users.toggle-ban');
 });
 
-require __DIR__.'/auth.php';
+
+require __DIR__ . '/auth.php';
