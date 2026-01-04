@@ -92,7 +92,7 @@ class ListingController extends Controller
             $listing->targetCards()->detach();
         }
 
-        return back()->with('success', 'Fiche mise à jour !');
+        return back()->with('success', 'Carte mise à jour !');
     }
 
     /**

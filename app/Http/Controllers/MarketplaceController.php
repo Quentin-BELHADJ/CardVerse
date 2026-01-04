@@ -12,7 +12,11 @@ class MarketplaceController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Listing::where('status', 'En vente')->with(['card', 'user']);
+        $query = Listing::where('status', 'En vente')
+            ->whereHas('user', function ($q) {
+                $q->where('is_banned', false);
+            })
+            ->with(['card', 'user']);
 
         // Filters
         if ($request->filled('min_price')) {
