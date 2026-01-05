@@ -19,23 +19,20 @@
 
                     <div class="mt-4">
                         <x-input-label for="rarity" :value="__('Rareté')" />
-                        <select name="rarity" id="rarity" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full">
-                            <option value="Commune" @selected(old('rarity', $card->rarity) == 'Commune')>Commune</option>
-                            <option value="Peu commune" @selected(old('rarity', $card->rarity) == 'Peu commune')>Peu commune</option>
-                            <option value="Rare" @selected(old('rarity', $card->rarity) == 'Rare')>Rare</option>
-                            <option value="Holo Rare" @selected(old('rarity', $card->rarity) == 'Holo Rare')>Holo Rare</option>
-                            <option value="Ultra Rare" @selected(old('rarity', $card->rarity) == 'Ultra Rare')>Ultra Rare</option>
-                        </select>
+                        <x-text-input id="rarity" class="block mt-1 w-full" type="text" name="rarity"
+                            :value="old('rarity', $card->rarity)" required />
                     </div>
 
                     <div class="mt-4">
                         <x-input-label for="image_url" :value="__('URL de l\'image')" />
-                        <x-text-input id="image_url" class="block mt-1 w-full" type="text" name="image_url" :value="old('image_url', $card->image_url)" />
+                        <x-text-input id="image_url" class="block mt-1 w-full" type="text" name="image_url"
+                            :value="old('image_url', $card->image_url)" />
                     </div>
 
                     <div class="mt-4">
                         <x-input-label for="collection_id" :value="__('Collection')" />
-                        <select name="collection_id" id="collection_id" class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full">
+                        <select name="collection_id" id="collection_id"
+                            class="border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm block mt-1 w-full">
                             @foreach($collections as $collection)
                                 <option value="{{ $collection->id }}" @selected(old('collection_id', $card->collection_id) == $collection->id)>
                                     {{ $collection->name }}
@@ -45,7 +42,8 @@
                     </div>
 
                     <div class="flex items-center justify-end mt-6 space-x-4">
-                        <a href="{{ route('cards.show', $card) }}" class="text-sm text-gray-600 underline hover:text-gray-900">
+                        <a href="{{ route('cards.show', $card) }}"
+                            class="text-sm text-gray-600 underline hover:text-gray-900">
                             {{ __('Annuler') }}
                         </a>
                         <x-primary-button>
